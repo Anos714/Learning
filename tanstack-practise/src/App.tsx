@@ -1,6 +1,10 @@
+import QueryExample from "./components/Query";
+
 const App = () => {
   return (
-    <div>App</div>
-  )
-}
-export default App
+    <div>
+      <QueryExample />
+    </div>
+  );
+};
+export default App;
