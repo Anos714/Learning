@@ -1,10 +1,8 @@
-import axios from "axios";
-import type { PostRes } from "../types/query";
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import useGetPosts from "../hooks/useGetPosts";
 
 const QueryExample = () => {
-  const API_URL = "https://dummyjson.com/posts";
+  // const API_URL = "https://dummyjson.com/pos";
 
   //old way of fetching data without react-query
 
@@ -25,29 +23,52 @@ const QueryExample = () => {
   //   }, []);
 
   // new way of fetching data with react-query
-  const { data, isLoading, isPending, error } = useQuery({
-    queryKey: ["posts"],
-    queryFn: async () => {
-      const res = await axios.get(API_URL);
-      return res.data.posts;
-    },
-  });
+  // const {
+  //   data: postData,
+  //   isLoading,
+  //   isPending,
+  //   error,
+  // } = useQuery({
+  //   queryKey: ["posts"],
+  //   queryFn: async (): Promise<PostRes[]> => {
+  //     const res = await axios.get(API_URL);
+  //     return res.data.posts;
+  //   },
+  //   retry: false, // disable retrying failed requests
+  // });
 
-  if (isLoading || isPending) return <p>Loading...</p>;
+  //by usng hook
+  const [userClicked, setUserClicked] = useState(false);
+  const { postData, isLoading, error, refetch } = useGetPosts();
+
+  if (isLoading) return <p>Loading...</p>;
   if (error) return <p>{error.message}</p>;
-  console.log(data);
+  // console.log(postData);
+
+  const handleUserClick = () => {
+    setUserClicked((prev) => !prev);
+  };
 
   return (
-    // <div>
-    //   {posts.length > 0 &&
-    //     posts.map((post) => (
-    //       <div key={post.id}>
-    //         <h1>{post.title}</h1>
-    //         <p>{post.body}</p>
-    //       </div>
-    //     ))}
-    // </div>
-    <h1>hi</h1>
+    <div>
+      <button onClick={handleUserClick}>Click Me!</button>
+      <button onClick={() => refetch()}>Refetch Data</button>
+
+      {userClicked ? (
+        postData &&
+        postData.length > 0 &&
+        postData.map((post) => (
+          <div key={post.id}>
+            <h1>{post.title}</h1>
+            <p>{post.body}</p>
+            <p>{post.views}</p>
+          </div>
+        ))
+      ) : (
+        <p>Click button to view posts </p>
+      )}
+      {}
+    </div>
   );
 };
 export default QueryExample;

@@ -10,3 +10,10 @@ export interface PostRes {
   views: number;
   userId: number;
 }
+
+export interface AddPostReq {
+  title: string;
+  userId: number;
+  body: string;
+  tags: string[];
+}
