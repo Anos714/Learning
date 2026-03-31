@@ -2,9 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { addNewPost } from "../lib/api";
 
 const useAddPost = () => {
-  const {} = useMutation({
+  const { data, isPending, error } = useMutation({
     mutationFn: addNewPost,
   });
-  return {};
+  return { data, isPending, error };
 };
 export default useAddPost;
