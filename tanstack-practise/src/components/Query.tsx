@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useGetPosts from "../hooks/useGetPosts";
+import useAddPost from "../hooks/useAddPost";
 
 const QueryExample = () => {
   // const API_URL = "https://dummyjson.com/pos";
@@ -49,6 +50,8 @@ const QueryExample = () => {
     setUserClicked((prev) => !prev);
   };
 
+  //post request
+
   return (
     <div>
       <button onClick={handleUserClick}>Click Me!</button>
@@ -67,7 +70,6 @@ const QueryExample = () => {
       ) : (
         <p>Click button to view posts </p>
       )}
-      {}
     </div>
   );
 };
