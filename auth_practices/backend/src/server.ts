@@ -1,8 +1,16 @@
+import th from "zod/v4/locales/th.js";
 import app from "./app.js";
-import { env } from "./lib/env.js";
+import { connectDB } from "./config/db.js";
+import { env } from "./config/env.js";
 
 const PORT = env.PORT;
 
-app.listen(PORT, () => {
-  console.log(`Server started at PORT: ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server started at PORT: ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    throw new Error("Database connection failed", error);
+  });
