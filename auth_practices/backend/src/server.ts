@@ -1,4 +1,3 @@
-import th from "zod/v4/locales/th.js";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 import { env } from "./config/env.js";
