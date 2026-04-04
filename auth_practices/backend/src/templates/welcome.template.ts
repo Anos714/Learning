@@ -1,113 +1,69 @@
-export const welcomeTemplate = (username: string) => {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Preview - Anos Solutions</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Email client safe styles simulated here */
-        .email-body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f9;
-            margin: 0;
-            padding: 20px 0;
-        }
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .email-header {
-            background-color: #2563eb;
-            padding: 40px 20px;
-            text-align: center;
-            color: #ffffff;
-        }
-        .email-content {
-            padding: 40px 30px;
-            line-height: 1.6;
-            color: #334155;
-        }
-        .email-btn {
-            display: inline-block;
-            padding: 14px 28px;
-            background-color: #2563eb;
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            margin: 25px 0;
-            transition: background-color 0.2s;
-        }
-        .email-btn:hover {
-            background-color: #1d4ed8;
-        }
-        .email-footer {
-            background-color: #f8fafc;
-            padding: 30px 20px;
-            text-align: center;
-            font-size: 13px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-        }
-        .social-link {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 500;
-        }
-    </style>
-</head>
-<body class="bg-gray-200 p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
-       
+export const welcomeTemplate = (username: string, verifyUrl: string) => {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <body style="margin:0; padding:0; background:#f4f6f8; font-family:Arial, sans-serif;">
+    
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;">
+      <tr>
+        <td align="center">
 
-        <!-- The Actual Email Rendering -->
-        <div class="email-body rounded-lg">
-            <div class="email-container">
-                <!-- Header -->
-                <div class="email-header">
-                    <h1 style="margin:0; font-size: 32px;">Anos Solutions</h1>
-                </div>
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
+            
+            <!-- Header -->
+            <tr>
+              <td style="background:#2563eb; padding:20px; text-align:center; color:#ffffff;">
+                <h1 style="margin:0;">Anos Solutions</h1>
+              </td>
+            </tr>
 
-                <!-- Content -->
-                <div class="email-content">
-                    <h2 style="font-size: 24px; margin-bottom: 20px;">Namaste Rahul!</h2>
-                    <p>Humein bahut khushi hai ki aapne <strong>Anos Solutions</strong> ko chuna. Hum innovative solutions ke saath aapki journey ko behtar banane ke liye committed hain.</p>
-                    
-                    <p>Aapka account ab puri tarah se active hai. Aap niche diye gaye button par click karke apna dashboard explore kar sakte hain:</p>
-                    
-                    <div style="text-align: center;">
-                        <a href="#" class="email-btn">Get Started Now</a>
-                    </div>
+            <!-- Content -->
+            <tr>
+              <td style="padding:30px; color:#333;">
+                <h2 style="margin-top:0;">Hi ${username},</h2>
 
-                    <p style="margin-top: 30px;">Agar aapko koi bhi sawal ho, toh bas is email ka reply karein. Humari team hamesha aapki madad ke liye taiyar hai.</p>
-                    
-                    <p style="margin-top: 25px;">Shukriya,<br><span style="color: #2563eb; font-weight: bold;">Team Anos Solutions</span></p>
-                </div>
+                <p>Welcome to <strong>Anos Solutions</strong> 🎉</p>
 
-                <!-- Footer -->
-                <div class="email-footer">
-                    <div style="margin-bottom: 15px;">
-                        <a href="#" class="social-link">LinkedIn</a> &nbsp;|&nbsp; 
-                        <a href="#" class="social-link">Twitter</a> &nbsp;|&nbsp; 
-                        <a href="#" class="social-link">Website</a>
-                    </div>
-                    <p style="margin: 5px 0;">&copy; 2024 Anos Solutions. All rights reserved.</p>
-                    <p style="margin: 0;">123 Tech Park, Digital City, India</p>
-                </div>
-            </div>
-        </div>
+                <p>Please verify your email address by clicking the button below:</p>
 
-        <!-- Mobile Simulation Hint -->
-        <p class="text-center text-gray-500 text-xs mt-6 italic">
-            Note: This is a web-based preview. Real email clients (Gmail, Outlook) may vary slightly.
-        </p>
-    </div>
-</body>
-</html>`;
+                <!-- Button -->
+                <table cellpadding="0" cellspacing="0" style="margin:20px 0;">
+                  <tr>
+                    <td align="center">
+                      <a href="${verifyUrl}" 
+                         style="background:#2563eb; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:5px; display:inline-block;">
+                         Verify Email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p>If the button doesn’t work, copy and paste this link:</p>
+                <p style="word-break:break-all;">
+                  <a href="${verifyUrl}">${verifyUrl}</a>
+                </p>
+
+                <p>This link will expire in 10 minutes.</p>
+
+                <p>Thanks,<br><strong>Team Anos Solutions</strong></p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f1f5f9; padding:20px; text-align:center; font-size:12px; color:#666;">
+                <p style="margin:0;">© 2026 Anos Solutions</p>
+                <p style="margin:5px 0;">If you didn’t create this account, ignore this email.</p>
+              </td>
+            </tr>
+
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </body>
+  </html>
+  `;
 };

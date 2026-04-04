@@ -8,10 +8,10 @@ import { loginSchema, signupSchema } from "../schemas/user.schema.js";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
-import { sendEmail } from "../lib/sendEmail.js";
-import { welcomeTemplate } from "../templates/welcome.template.js";
 import { env } from "../config/env.js";
 import { generateCookieToken } from "../middlewares/genearateCookie.middleware.js";
+import { verifyEmail } from "../lib/emailVerification.js";
+import jwt from "jsonwebtoken";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -47,11 +47,7 @@ export const signupUser = async (
       password: hashedPassword,
     });
 
-    await sendEmail(
-      email,
-      "Welcome to Anos Solutions",
-      welcomeTemplate(username),
-    );
+    await verifyEmail(newUser);
 
     await generateCookieToken(
       res,
@@ -116,6 +112,38 @@ export const signoutUser = (req: Request, res: Response) => {
     return res
       .status(200)
       .json({ success: true, message: "Signout successful" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const verifyEmailToken = async (req: Request, res: Response) => {
+  const { token } = req.query;
+  console.log(token);
+
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({ success: false, message: "Invalid token" });
+  }
+  try {
+    const payload = jwt.verify(token, env.JWT_EMAIL_VERIFY_SECRET);
+
+    const user = await User.findById(payload.sub);
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid token" });
+    }
+    if (user.isUserVerified) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already verified" });
+    }
+    user.isUserVerified = true;
+    await user.save();
+    return res
+      .status(200)
+      .json({ success: true, message: "Email verified successfully" });
   } catch (error) {
     console.error(error);
     return res
