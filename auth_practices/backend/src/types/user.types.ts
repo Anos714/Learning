@@ -13,12 +13,24 @@ export interface IUser extends Document {
   resetPasswordTokenExpiry?: Date | undefined;
 }
 
+//signup types
 export interface SignupReq {
   username: string;
   email: string;
   password: string;
 }
 export interface SignupRes {
+  success: boolean;
+  message: string;
+  user?: IUser;
+}
+
+//login types
+export interface LoginReq {
+  email: string;
+  password: string;
+}
+export interface LoginRes {
   success: boolean;
   message: string;
   user?: IUser;

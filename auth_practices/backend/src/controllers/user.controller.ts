@@ -1,5 +1,10 @@
-import type { SignupReq, SignupRes } from "../types/user.types.js";
-import { userSchema } from "../schemas/user.schema.js";
+import type {
+  LoginReq,
+  LoginRes,
+  SignupReq,
+  SignupRes,
+} from "../types/user.types.js";
+import { loginSchema, signupSchema } from "../schemas/user.schema.js";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateCookieToken } from "../middlewares/genearateCookie.middleware.js";
@@ -9,7 +14,7 @@ export const SignupUser = async (
   req: Request<{}, {}, SignupReq>,
   res: Response<SignupRes>,
 ) => {
-  const result = userSchema.safeParse(req.body);
+  const result = signupSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({ success: false, message: "Invalid input" });
   }
@@ -48,3 +53,38 @@ export const SignupUser = async (
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+export const loginUser = async (
+  req: Request<{}, {}, LoginReq>,
+  res: Response<LoginRes>,
+) => {
+  const result = loginSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ success: false, message: "Invalid input" });
+  }
+  const { email, password } = result.data;
+  try {
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
+    }
+
+    await generateCookieToken(res, 200, "Login successful", user);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+//30:54
