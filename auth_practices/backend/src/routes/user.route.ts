@@ -13,7 +13,6 @@ router.post("/signin", signinUser);
 router.post("/signout", signoutUser);
 router.get("/verify-email", verifyEmailToken);
 
-
-
-
 export default router;
+
+//1:21:33
