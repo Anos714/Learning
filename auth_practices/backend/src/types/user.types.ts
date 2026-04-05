@@ -1,3 +1,4 @@
+import { access } from "node:fs";
 import type { Document } from "mongoose";
 
 export interface IUser extends Document {
@@ -22,7 +23,13 @@ export interface SignupReq {
 export interface SignupRes {
   success: boolean;
   message: string;
-  user?: IUser;
+  user?: {
+    username: string;
+    email: string;
+    role: "user" | "admin";
+    isUserVerified: boolean;
+    twoFactorEnabled: boolean;
+  };
 }
 
 //login types
@@ -33,5 +40,12 @@ export interface LoginReq {
 export interface LoginRes {
   success: boolean;
   message: string;
-  user?: IUser;
+  accessToken?: string;
+  user?: {
+    username: string;
+    email: string;
+    role: "user" | "admin";
+    isUserVerified: boolean;
+    twoFactorEnabled: boolean;
+  };
 }

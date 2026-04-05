@@ -1,3 +1,4 @@
+import { access } from "node:fs";
 import type {
   LoginReq,
   LoginRes,
@@ -9,7 +10,10 @@ import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import { env } from "../config/env.js";
-import { generateCookieToken } from "../middlewares/genearateCookie.middleware.js";
+import {
+  createAccessToken,
+  createRefreshToken,
+} from "../middlewares/genearateCookie.middleware.js";
 import { verifyEmail } from "../lib/emailVerification.js";
 import jwt from "jsonwebtoken";
 
@@ -49,12 +53,17 @@ export const signupUser = async (
 
     await verifyEmail(newUser);
 
-    await generateCookieToken(
-      res,
-      201,
-      "User registered successfully",
-      newUser,
-    );
+    res.status(200).json({
+      success: true,
+      message: "User registered successfully",
+      user: {
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        isUserVerified: newUser.isUserVerified,
+        twoFactorEnabled: newUser.twoFactorEnabled,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -85,7 +94,46 @@ export const signinUser = async (
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    await generateCookieToken(res, 200, "Signin successful", user);
+    if (!user.isUserVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email before signing in",
+      });
+    }
+
+    const accessToken = createAccessToken(
+      user._id.toString(),
+      user.tokenVersion,
+      user.role,
+    );
+    const refreshToken = createRefreshToken(
+      user._id.toString(),
+      user.tokenVersion,
+    );
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: env.NODE_ENV === "production" ? "lax" : "none",
+    } as const;
+
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Signin successful",
+      accessToken,
+      user: {
+        username: user?.username,
+        email: user?.email,
+        role: user?.role,
+        isUserVerified: user?.isUserVerified,
+        twoFactorEnabled: user?.twoFactorEnabled,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res
@@ -151,3 +199,5 @@ export const verifyEmailToken = async (req: Request, res: Response) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+//1:00:03
