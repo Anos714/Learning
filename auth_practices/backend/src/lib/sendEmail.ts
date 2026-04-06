@@ -1,5 +1,5 @@
 import { env } from "../config/env.js";
-import { transporter } from "./emailTransporter.js";
+import { transporter } from "../config/emailTransporter.js";
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   console.log(`

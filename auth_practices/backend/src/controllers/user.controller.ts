@@ -4,7 +4,12 @@ import type {
   SignupReq,
   SignupRes,
 } from "../types/user.types.js";
-import { loginSchema, signupSchema } from "../schemas/user.schema.js";
+import {
+  loginSchema,
+  newPasswordSchema,
+  resetPasswordSchema,
+  signupSchema,
+} from "../schemas/user.schema.js";
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
@@ -16,6 +21,9 @@ import {
 import { verifyEmail } from "../lib/emailVerification.js";
 import jwt from "jsonwebtoken";
 import { verifyRefreshToken } from "../lib/token.js";
+import { sendEmail } from "../lib/sendEmail.js";
+import crypto from "crypto";
+import { resetPasswordTemplate } from "../templates/resetPassword.template.js";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -257,4 +265,77 @@ export const refreshHandler = async (req: Request, res: Response) => {
       twoFactorEnabled: user?.twoFactorEnabled,
     },
   });
+};
+
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  const result = resetPasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid email format" });
+  }
+  const { email } = result.data;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const resetToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
+  await user.save();
+  const generateResetLink = `${env.APP_URL}/api/user/reset-password?token=${rawToken}`;
+  await sendEmail(
+    user.email,
+    "Password Reset",
+    resetPasswordTemplate(user.username, generateResetLink),
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Password reset link sent to your email",
+  });
+};
+
+export const resetPasswordHandler = async (req: Request, res: Response) => {
+  const result = newPasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid password format" });
+  }
+  const { token, newPassword } = result.data;
+  try {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordTokenExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired token" });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiry = undefined;
+    user.tokenVersion += 1;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };

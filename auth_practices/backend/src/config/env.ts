@@ -7,6 +7,7 @@ export const env = {
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "",
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "",
   JWT_EMAIL_VERIFY_SECRET: process.env.JWT_EMAIL_VERIFY_SECRET || "",
+  JWT_RESET_PASSWORD_SECRET: process.env.JWT_RESET_PASSWORD_SECRET || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
   SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
   SMTP_USER: process.env.SMTP_USER || "",
