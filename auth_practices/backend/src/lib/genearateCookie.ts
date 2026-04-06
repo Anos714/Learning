@@ -8,7 +8,7 @@ export const createAccessToken = (
 ) => {
   const payload = { sub: userId, role, tokenVersion };
 
-  const accessToken = jwt.sign({ payload }, env.JWT_ACCESS_SECRET, {
+  const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
     expiresIn: "15m",
   });
 
@@ -18,7 +18,7 @@ export const createAccessToken = (
 export const createRefreshToken = (userId: string, tokenVersion: number) => {
   const payload = { sub: userId, tokenVersion };
 
-  const refreshToken = jwt.sign({ payload }, env.JWT_REFRESH_SECRET, {
+  const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
     expiresIn: "7d",
   });
 

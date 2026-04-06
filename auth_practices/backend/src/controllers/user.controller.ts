@@ -12,9 +12,10 @@ import { env } from "../config/env.js";
 import {
   createAccessToken,
   createRefreshToken,
-} from "../middlewares/genearateCookie.middleware.js";
+} from "../lib/genearateCookie.js";
 import { verifyEmail } from "../lib/emailVerification.js";
 import jwt from "jsonwebtoken";
+import { verifyRefreshToken } from "../lib/token.js";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -148,10 +149,7 @@ export const signoutUser = (req: Request, res: Response) => {
       secure: env.NODE_ENV === "production",
       sameSite: env.NODE_ENV === "production" ? "lax" : "none",
     } as const;
-    res.clearCookie("accessToken", {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000,
-    });
+
     res.clearCookie("refreshToken", {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -199,4 +197,64 @@ export const verifyEmailToken = async (req: Request, res: Response) => {
   }
 };
 
-//1:00:03
+export const refreshHandler = async (req: Request, res: Response) => {
+  const token = req.cookies.refreshToken;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "No refresh token provided" });
+  }
+
+  const payload = verifyRefreshToken(token);
+  console.log("payload", payload);
+
+  if (!payload) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid refresh token" });
+  }
+  const user = await User.findById(payload.sub);
+  if (!user) {
+    return res.status(401).json({ success: false, message: "User not found" });
+  }
+  if (user.tokenVersion !== payload.tokenVersion) {
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid refresh token" });
+  }
+
+  const newAccessToken = createAccessToken(
+    user._id.toString(),
+    user.tokenVersion,
+    user.role,
+  );
+  const newRefreshToken = createRefreshToken(
+    user._id.toString(),
+    user.tokenVersion,
+  );
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: env.NODE_ENV === "production" ? "lax" : "none",
+  } as const;
+
+  res.cookie("refreshToken", newRefreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Token refreshed successfully",
+    accessToken: newAccessToken,
+    user: {
+      username: user?.username,
+      email: user?.email,
+      role: user?.role,
+      isUserVerified: user?.isUserVerified,
+      twoFactorEnabled: user?.twoFactorEnabled,
+    },
+  });
+};
