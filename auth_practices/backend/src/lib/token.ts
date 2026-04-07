@@ -9,3 +9,12 @@ export const verifyRefreshToken = (token: string) => {
     return null;
   }
 };
+
+export const verifyAccessToken = (token: string) => {
+  try {
+    return jwt.verify(token, env.JWT_ACCESS_SECRET) as jwt.JwtPayload;
+  } catch (error) {
+    console.error("Error verifying access token:", error);
+    return null;
+  }
+};
