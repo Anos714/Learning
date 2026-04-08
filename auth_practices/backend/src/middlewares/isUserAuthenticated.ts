@@ -57,6 +57,7 @@ export const isUserAuthenticated = async (
       email: user.email,
       name: user.username,
       role: user.role,
+      tokenVersion: user.tokenVersion,
       isUserVerified: user.isUserVerified,
     };
 

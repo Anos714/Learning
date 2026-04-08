@@ -155,8 +155,18 @@ export const signinUser = async (
   }
 };
 
-export const signoutUser = (req: Request, res: Response) => {
+export const signoutUser = async (req: AuthRequest, res: Response) => {
   try {
+    const payload = req.user;
+    if (payload) {
+      const user = await User.findById(payload.id);
+
+      if (user) {
+        user.tokenVersion += 1;
+        await user.save();
+      }
+    }
+
     const cookieOptions = {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
