@@ -284,7 +284,7 @@ export const refreshHandler = async (req: Request, res: Response) => {
     }
     //case 2: reuse of refresh token detected
     else {
-      console.log("⚠️ Refresh token reuse detected!");
+      console.log("Refresh token reuse detected!");
 
       // invalidate all sessions
       user.tokenVersion += 1;
