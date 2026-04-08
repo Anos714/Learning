@@ -24,6 +24,8 @@ import { verifyRefreshToken } from "../lib/token.js";
 import { sendEmail } from "../lib/sendEmail.js";
 import crypto from "crypto";
 import { resetPasswordTemplate } from "../templates/resetPassword.template.js";
+import type { AuthRequest } from "../types/express.js";
+import client from "../config/redis.js";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -337,5 +339,45 @@ export const resetPasswordHandler = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const checkUserStatus = async (req: AuthRequest, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    });
+  }
+
+  try {
+    const cacheKey = `user:${user.id}`;
+
+    const cachedData = await client.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json({
+        success: true,
+        data: JSON.parse(cachedData),
+        source: "cache",
+      });
+    }
+
+    await client.set(cacheKey, JSON.stringify(user), {
+      EX: 60,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+      source: "db",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };

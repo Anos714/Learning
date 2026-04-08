@@ -7,7 +7,9 @@ import {
   refreshHandler,
   requestPasswordReset,
   resetPasswordHandler,
+  checkUserStatus,
 } from "../controllers/user.controller.js";
+import { isUserAuthenticated } from "../middlewares/isUserAuthenticated.js";
 
 const router = Router();
 
@@ -18,7 +20,6 @@ router.get("/verify-email", verifyEmailToken);
 router.post("/refresh-token", refreshHandler);
 router.post("/request-password-reset", requestPasswordReset);
 router.post("/reset-password", resetPasswordHandler);
+router.get("/me", isUserAuthenticated, checkUserStatus);
 
 export default router;
-
-//1:50:38
