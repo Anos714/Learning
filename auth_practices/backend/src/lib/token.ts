@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import crypto from "crypto";
 
 export const verifyRefreshToken = (token: string) => {
   try {
@@ -17,4 +18,8 @@ export const verifyAccessToken = (token: string) => {
     console.error("Error verifying access token:", error);
     return null;
   }
+};
+
+export const hashToken = (token: string) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
 };

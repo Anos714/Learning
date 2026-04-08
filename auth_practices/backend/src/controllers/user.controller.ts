@@ -20,12 +20,12 @@ import {
 } from "../lib/genearateCookie.js";
 import { verifyEmail } from "../lib/emailVerification.js";
 import jwt from "jsonwebtoken";
-import { verifyRefreshToken } from "../lib/token.js";
+import { hashToken, verifyRefreshToken } from "../lib/token.js";
 import { sendEmail } from "../lib/sendEmail.js";
-import crypto from "crypto";
 import { resetPasswordTemplate } from "../templates/resetPassword.template.js";
 import type { AuthRequest } from "../types/express.js";
 import client from "../config/redis.js";
+import crypto from "crypto";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -111,20 +111,23 @@ export const signinUser = async (
       });
     }
 
-    const accessToken = createAccessToken(
-      user._id.toString(),
-      user.tokenVersion,
-      user.role,
-    );
-    const refreshToken = createRefreshToken(
-      user._id.toString(),
-      user.tokenVersion,
-    );
+    const userId = user._id.toString();
+
+    const accessToken = createAccessToken(userId, user.tokenVersion, user.role);
+    const refreshToken = createRefreshToken(userId, user.tokenVersion);
+
+    //hashing of refresh token
+    const hashedRefreshToken = hashToken(refreshToken);
+
+    //refresh token in redis storage
+    await client.set(`refresh:${userId}`, hashedRefreshToken, {
+      EX: 7 * 24 * 60 * 60,
+    });
 
     const cookieOptions = {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: env.NODE_ENV === "production" ? "lax" : "none",
+      sameSite: "lax",
     } as const;
 
     res.cookie("refreshToken", refreshToken, {
@@ -216,57 +219,90 @@ export const refreshHandler = async (req: Request, res: Response) => {
       .json({ success: false, message: "No refresh token provided" });
   }
 
-  const payload = verifyRefreshToken(token);
-  console.log("payload", payload);
+  try {
+    const payload = verifyRefreshToken(token);
 
-  if (!payload) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid refresh token" });
+    if (!payload || !payload.sub) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const userId = payload.sub;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "User not found" });
+    }
+    if (user.tokenVersion !== payload.tokenVersion) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid refresh token" });
+    }
+    const storedToken = await client.get(`refresh:${userId}`);
+
+    const hashedToken = hashToken(token);
+
+    //case 1: valid token
+
+    if (storedToken === hashedToken) {
+      const newAccessToken = createAccessToken(
+        userId,
+        payload.tokenVersion,
+        payload.role,
+      );
+      const newRefreshToken = createRefreshToken(userId, payload.tokenVersion);
+
+      //refresh token rotating
+      const newHashedToken = hashToken(newRefreshToken);
+      await client.set(`refresh:${userId}`, newHashedToken, {
+        EX: 7 * 24 * 60 * 60,
+      });
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+      } as const;
+
+      res.cookie("refreshToken", newRefreshToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Token refreshed successfully",
+        accessToken: newAccessToken,
+        user: {
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          isUserVerified: user.isUserVerified,
+          twoFactorEnabled: user.twoFactorEnabled,
+        },
+      });
+    }
+    //case 2: reuse of refresh token detected
+    else {
+      console.log("⚠️ Refresh token reuse detected!");
+
+      // invalidate all sessions
+      user.tokenVersion += 1;
+      await user.save();
+
+      await client.del(`refresh:${userId}`);
+
+      return res.status(403).json({
+        success: false,
+        message: "Session compromised. Login again.",
+      });
+    }
+  } catch (error) {
+    return res.status(403).json({
+      success: false,
+      message: "Token expired or invalid",
+    });
   }
-  const user = await User.findById(payload.sub);
-  if (!user) {
-    return res.status(401).json({ success: false, message: "User not found" });
-  }
-  if (user.tokenVersion !== payload.tokenVersion) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid refresh token" });
-  }
-
-  const newAccessToken = createAccessToken(
-    user._id.toString(),
-    user.tokenVersion,
-    user.role,
-  );
-  const newRefreshToken = createRefreshToken(
-    user._id.toString(),
-    user.tokenVersion,
-  );
-
-  const cookieOptions = {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: env.NODE_ENV === "production" ? "lax" : "none",
-  } as const;
-
-  res.cookie("refreshToken", newRefreshToken, {
-    ...cookieOptions,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  return res.status(200).json({
-    success: true,
-    message: "Token refreshed successfully",
-    accessToken: newAccessToken,
-    user: {
-      username: user?.username,
-      email: user?.email,
-      role: user?.role,
-      isUserVerified: user?.isUserVerified,
-      twoFactorEnabled: user?.twoFactorEnabled,
-    },
-  });
 };
 
 export const requestPasswordReset = async (req: Request, res: Response) => {
@@ -284,7 +320,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   }
 
   const rawToken = crypto.randomBytes(32).toString("hex");
-  const resetToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const resetToken = hashToken(rawToken);
 
   user.resetPasswordToken = resetToken;
   user.resetPasswordTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
@@ -311,7 +347,7 @@ export const resetPasswordHandler = async (req: Request, res: Response) => {
   }
   const { token, newPassword } = result.data;
   try {
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = hashToken(token);
 
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
