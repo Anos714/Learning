@@ -1,6 +1,8 @@
 import { useForm } from "react-hook-form";
 import { signupSchema, type SignupReq } from "../schema/signup";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { signupUser } from "../api/auth.api";
 
 const Signup = () => {
   const {
@@ -11,8 +13,22 @@ const Signup = () => {
     resolver: zodResolver(signupSchema),
   });
 
+  const {
+    mutate: signupMutation,
+    isPending,
+    error,
+  } = useMutation({
+    mutationFn: signupUser,
+    onSuccess: (data) => {
+      console.log("signupo successfull", data);
+    },
+    onError: (error) => {
+      console.error(error.message);
+    },
+  });
+
   const handleSignup = (data: SignupReq) => {
-    console.log(data);
+    signupMutation(data);
   };
 
   return (

@@ -4,8 +4,8 @@ import Signin from "./pages/Signin";
 import useGetAuthUser from "./hooks/useGetAuthUser";
 
 const App = () => {
-  const { authUserData, isLoading, error } = useGetAuthUser();
-  console.log(authUserData, isLoading, error);
+  // const { authUserData, isLoading, error } = useGetAuthUser();
+  // console.log(authUserData, isLoading, error);
 
   return (
     <div>
