@@ -3,6 +3,9 @@ import { signupSchema, type SignupReq } from "../schema/signup";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { signupUser } from "../api/auth.api";
+import { toast } from "react-hot-toast";
+import type { SignupRes } from "../types/auth";
+import type { HTTPError } from "ky";
 
 const Signup = () => {
   const {
@@ -13,23 +16,21 @@ const Signup = () => {
     resolver: zodResolver(signupSchema),
   });
 
-  const {
-    mutate: signupMutation,
-    isPending,
-    error,
-  } = useMutation({
+  const { mutate: signup, isPending } = useMutation({
     mutationFn: signupUser,
-    onSuccess: (data) => {
-      console.log("signupo successfull", data);
+    onSuccess: (data: SignupRes) => {
+      toast.success(data.message);
     },
     onError: (error) => {
-      console.error(error.message);
+      toast.error(error.message);
     },
   });
 
   const handleSignup = (data: SignupReq) => {
-    signupMutation(data);
+    signup(data);
   };
+
+  console.log(error);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -91,8 +92,9 @@ const Signup = () => {
         <button
           type="submit"
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-200"
+          disabled={isPending}
         >
-          Sign Up
+          {isPending ? "Signing up..." : "Sign up"}
         </button>
       </form>
     </div>
