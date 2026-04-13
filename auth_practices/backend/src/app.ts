@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import cors from "cors";
 import userRouter from "./routes/user.route.js";
+import googleRouter from "./routes/google.route.js";
 import { isUserAdmin } from "./middlewares/isUserAdmin.js";
 import { isUserAuthenticated } from "./middlewares/isUserAuthenticated.js";
 import { globalLimiter } from "./middlewares/rateLimit.middleware.js";
@@ -46,5 +47,6 @@ app.use("/admin", isUserAuthenticated, isUserAdmin, (req, res) => {
 });
 
 app.use("/api/user", userRouter);
+app.use("/auth", googleRouter);
 
 export default app;

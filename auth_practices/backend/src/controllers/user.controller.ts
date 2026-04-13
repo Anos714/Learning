@@ -26,6 +26,7 @@ import { resetPasswordTemplate } from "../templates/resetPassword.template.js";
 import type { AuthRequest } from "../types/express.js";
 import client from "../config/redis.js";
 import crypto from "crypto";
+import { OAuth2Client } from "google-auth-library";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -417,6 +418,138 @@ export const checkUserStatus = async (req: AuthRequest, res: Response) => {
       success: true,
       data: user,
       source: "db",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const getGoogleClient = () => {
+  const clientId = env.GOOGLE_CLIENT_ID;
+  const clientSecret = env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = env.GOOGLE_CALLBACK_URL;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Google client id and secret are missing");
+  }
+
+  return new OAuth2Client({
+    clientId,
+    clientSecret,
+    redirectUri,
+  });
+};
+
+export const googleAuthStartHandler = async (req: Request, res: Response) => {
+  try {
+    const client = getGoogleClient();
+
+    const url = client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      scope: ["openid", "email", "profile"],
+    });
+
+    return res.redirect(url);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const googleAuthCallbackHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  const code = req.query.code as string | undefined;
+
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing code in callback",
+    });
+  }
+  try {
+    const client = getGoogleClient();
+
+    const { tokens } = await client.getToken(code);
+    const idToken = tokens.id_token;
+
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to retrieve id token",
+      });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.sub || !payload.email || !payload.name) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    let user = await User.findOne({ email: payload.email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const passwordHash = crypto
+        .createHash("sha256")
+        .update(randomPassword)
+        .digest("hex");
+      user = await User.create({
+        username: payload.name,
+        email: payload.email,
+        role: "user",
+        password: passwordHash, // Store the hashed password
+        isUserVerified: true, // Mark as verified since it's from Google
+        twoFactorEnabled: false,
+      });
+    }
+
+    const userId = user._id.toString();
+
+    const accessToken = createAccessToken(userId, user.tokenVersion, user.role);
+    const refreshToken = createRefreshToken(userId, user.tokenVersion);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+    } as const;
+
+    res.cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successfull",
+      accessToken,
+      data: {
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        isUserVerified: user.isUserVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
+      },
     });
   } catch (error) {
     console.error(error);
