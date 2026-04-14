@@ -1,13 +1,9 @@
 import { Route, Routes } from "react-router";
 import Signup from "./pages/Signup";
 import Signin from "./pages/Signin";
-// import useGetAuthUser from "./hooks/useGetAuthUser";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
-  // const { authUserData, isLoading, error } = useGetAuthUser();
-  // console.log(authUserData, isLoading, error);
-
   return (
     <div>
       <Routes>
