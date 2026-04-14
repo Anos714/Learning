@@ -1,1 +1,136 @@
 @import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.layout {
+  height: 100vh;
+  background: linear-gradient(to bottom, #ffffff, #e0f2fe);
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 10px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  color: #3f3f46;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.nav-link:hover {
+  color: #9ca3af;
+  transition: color 0.2s ease-out;
+}
+
+.logo {
+  color: black;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.nav-btn {
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.hero-container {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-badge {
+  max-width: 450px;
+  width: fit-content;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  margin: 50px auto;
+  padding: 5px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 20px;
+  color: black;
+
+  &:hover {
+    background-color: #e2e8f0;
+    transition: background-color 0.2s ease-out;
+  }
+}
+
+.hero-heading {
+  color: black;
+  font-size: 2.5rem;
+  font-weight: bold;
+  max-width: 450px;
+  text-align: center;
+  letter-spacing: -0.2px;
+}
+
+.hero-desc {
+  color: #a3a3a3;
+  max-width: 450px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.hero-btn-container {
+  display: flex;
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.pricing-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  color: black;
+  font-weight: 500;
+  padding: 10px 8px;
+  border-radius: 10px;
+  &:hover {
+    background-color: #d5d5e4;
+    transition: background-color 0.2s ease-out;
+  }
+}
+
+.left-line {
+  left: -10px;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, #cbd5e1, #e5e7eb);
+  position: absolute;
+}
+
+.right-line {
+  right: -10px;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, #cbd5e1, #e5e7eb);
+  position: absolute;
+}
