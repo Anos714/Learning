@@ -128,7 +128,7 @@ export const signinUser = async (
     const cookieOptions = {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: env.NODE_ENV === "production" ? "none" : "lax",
     } as const;
 
     res.cookie("refreshToken", refreshToken, {
@@ -531,26 +531,20 @@ export const googleAuthCallbackHandler = async (
     const cookieOptions = {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: env.NODE_ENV === "production" ? "none" : "lax",
     } as const;
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
+    });
 
     res.cookie("refreshToken", refreshToken, {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "Google login successfull",
-      accessToken,
-      data: {
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        isUserVerified: user.isUserVerified,
-        twoFactorEnabled: user.twoFactorEnabled,
-      },
-    });
+    return res.redirect("http://localhost:5173");
   } catch (error) {
     console.error(error);
 

@@ -5,24 +5,43 @@ import {
   type SignupInput,
 } from "../features/auth/schemas/auth.schema";
 import { assets } from "../assets/assets";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import type { signupRes } from "../features/auth/types/types";
+import { signupUser } from "../features/auth/api/api";
+import { useNavigate } from "react-router";
 
 const Signup = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
   });
 
+  const { mutate: signup, isPending } = useMutation({
+    mutationFn: signupUser,
+    onSuccess: (data: signupRes) => {
+      console.log(data);
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      console.error(error.message);
+      toast.error(error.message || "Signup failed");
+    },
+  });
+
   const handleSignup = (data: SignupInput) => {
-    console.log(data);
+    signup(data);
     reset();
   };
 
   const handleGoogleLogin = () => {
     console.log("Google login clicked");
+    window.location.href = "http://localhost:8080/auth/google";
   };
 
   return (
@@ -121,17 +140,20 @@ const Signup = () => {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-50"
             >
-              {isSubmitting ? "Creating..." : "Create Account"}
+              {isPending ? "Creating..." : "Create Account"}
             </button>
           </form>
 
           {/* Footer */}
           <p className="text-xs text-gray-500 mt-6 text-center">
             Already have an account?{" "}
-            <span className="text-indigo-600 font-medium cursor-pointer hover:underline">
+            <span
+              className="text-indigo-600 font-medium cursor-pointer hover:underline"
+              onClick={() => navigate("/signin")}
+            >
               Login
             </span>
           </p>
