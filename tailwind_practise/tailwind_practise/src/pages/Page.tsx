@@ -10,8 +10,11 @@ const Page = () => {
         <div className="right-line"></div>
         <Navbar />
         <Hero />
-        <div className="bottom-line"></div>
       </Container>
+      <div className="bottom-line"></div>
+      <div className="hero-img-container">
+        <img className="hero-img" src="hero-ui-v6.webp" alt="image" />
+      </div>
     </div>
   );
 };
