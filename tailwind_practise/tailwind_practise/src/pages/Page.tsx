@@ -10,6 +10,7 @@ const Page = () => {
         <div className="right-line"></div>
         <Navbar />
         <Hero />
+        <div className="bottom-line"></div>
       </Container>
     </div>
   );
