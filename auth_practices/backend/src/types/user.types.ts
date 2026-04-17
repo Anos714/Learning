@@ -9,6 +9,7 @@ export interface IUser extends Document {
   isUserVerified: boolean;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string | undefined;
+  twoFactorTempSecret?: string | undefined;
   tokenVersion: number;
   resetPasswordToken?: string | undefined;
   resetPasswordTokenExpiry?: Date | undefined;

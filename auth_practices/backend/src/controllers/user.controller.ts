@@ -27,6 +27,7 @@ import type { AuthRequest } from "../types/express.js";
 import client from "../config/redis.js";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
+import { generate, generateSecret, generateURI, verify } from "otplib";
 
 export const signupUser = async (
   req: Request<{}, {}, SignupReq>,
@@ -89,7 +90,7 @@ export const signinUser = async (
   if (!result.success) {
     return res.status(400).json({ success: false, message: "Invalid input" });
   }
-  const { email, password } = result.data;
+  const { email, password, twoFactorCode } = result.data;
   try {
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
@@ -104,6 +105,28 @@ export const signinUser = async (
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
+
+    if (user.twoFactorEnabled) {
+      if (!twoFactorCode || typeof twoFactorCode !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "Two factor code is required",
+        });
+      }
+    }
+
+    if (!user.twoFactorSecret) {
+      return res.status(400).json({
+        success: false,
+        message: "Two factor misconfigured for this account",
+      });
+    }
+
+    //verify the code
+    // const isValid = verify({
+    //   secret: user.twoFactorSecret,
+    //   token: twoFactorCode,
+    // });
 
     if (!user.isUserVerified) {
       return res.status(403).json({
@@ -555,3 +578,95 @@ export const googleAuthCallbackHandler = async (
   }
 };
 
+export const twoFactorSetupHandler = async (
+  req: AuthRequest,
+  res: Response,
+) => {
+  const authUser = req.user;
+  if (!authUser) {
+    return res.status(401).json({
+      success: false,
+      message: "User is not authenticated",
+    });
+  }
+  try {
+    const user = await User.findById(authUser.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    //secret genration for 2FA
+    const secret = generateSecret();
+
+    //generation of qr code uri
+    const uri = generateURI({
+      issuer: "Anos Solutions",
+      label: user.email,
+      secret,
+    });
+
+    user.twoFactorTempSecret = secret;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "2FA setup is done",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const verify2FA = async (req: AuthRequest, res: Response) => {
+  const { token } = req.body;
+  const authUser = req.user;
+  if (!authUser) {
+    return res.status(401).json({
+      success: false,
+      message: "User is not authenticated",
+    });
+  }
+
+  try {
+    const user = await User.findById(authUser.id);
+    if (!user || !user.twoFactorTempSecret) {
+      return res.status(400).json({
+        success: false,
+        message: "2FA setup not initiated",
+      });
+    }
+
+    const isValid = await verify({
+      secret: user.twoFactorTempSecret,
+      token,
+    });
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: "Invalid token" });
+    }
+
+    user.twoFactorSecret = user.twoFactorTempSecret;
+    user.twoFactorTempSecret = undefined;
+    user.twoFactorEnabled = true;
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "2FA enabled successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

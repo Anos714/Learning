@@ -8,6 +8,7 @@ import {
   requestPasswordReset,
   resetPasswordHandler,
   checkUserStatus,
+  twoFactorSetupHandler,
 } from "../controllers/user.controller.js";
 import { isUserAuthenticated } from "../middlewares/isUserAuthenticated.js";
 import {
@@ -27,5 +28,6 @@ router.post("/refresh-token", refreshLimiter, refreshHandler);
 router.post("/request-password-reset", resetLimiter, requestPasswordReset);
 router.post("/reset-password", resetLimiter, resetPasswordHandler);
 router.get("/me", refreshLimiter, isUserAuthenticated, checkUserStatus);
+router.post("/2fa/setup", isUserAuthenticated, twoFactorSetupHandler);
 
 export default router;

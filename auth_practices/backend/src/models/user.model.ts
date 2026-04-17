@@ -38,6 +38,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: undefined,
     },
+    twoFactorTempSecret: {
+      type: String,
+      default: undefined,
+    },
     tokenVersion: {
       type: Number,
       default: 0,
