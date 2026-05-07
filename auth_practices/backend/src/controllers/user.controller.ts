@@ -106,21 +106,21 @@ export const signinUser = async (
         .json({ success: false, message: "Invalid credentials" });
     }
 
-    if (user.twoFactorEnabled) {
-      if (!twoFactorCode || typeof twoFactorCode !== "string") {
-        return res.status(400).json({
-          success: false,
-          message: "Two factor code is required",
-        });
-      }
-    }
+    // if (user.twoFactorEnabled) {
+    //   if (!twoFactorCode || typeof twoFactorCode !== "string") {
+    //     return res.status(400).json({
+    //       success: false,
+    //       message: "Two factor code is required",
+    //     });
+    //   }
+    // }
 
-    if (!user.twoFactorSecret) {
-      return res.status(400).json({
-        success: false,
-        message: "Two factor misconfigured for this account",
-      });
-    }
+    // if (!user.twoFactorSecret) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Two factor misconfigured for this account",
+    //   });
+    // }
 
     //verify the code
     // const isValid = verify({
